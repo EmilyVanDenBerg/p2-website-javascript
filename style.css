@@ -11,20 +11,62 @@ html, body {
 header {
   text-align: center;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  background-color: #73AF4E;
+  color: white;
+  height: 10%;
+  box-sizing: border-box;
 }
 
-header, footer {
-  height: 10%;
-  width: 100%;
-  box-sizing: border-box;
-  text-shadow: 2px 2px 4px #000000;
+nav {
+  display: flex;
+  justify-content: center;
+  background-color: #73AF4E;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+}
+
+nav li {
+  margin: 0 10px;
+}
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #73AF4E;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.dropdown:hover .dropdown-content {
+  display: flex;
+  flex-direction: column;
+}
+
+nav a {
+  text-decoration: none;
   color: white;
+  display: inline-block;
+  padding: 10px;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease;
+}
+
+nav a:hover {
+  background-color: #39522A;
 }
 
 main {
-  height: 80%;
+  height: 75%;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -34,14 +76,6 @@ main {
   height: 33.333%;
   width: 100%;
   box-sizing: border-box;
-}
-
-header {
-  background-color: #73AF4E;
-}
-
-footer {
-  background-color: #39522A;
 }
 
 .middle-section, .bottom-section {
@@ -63,12 +97,30 @@ footer {
   padding: 10px;
   flex: 1;
 }
-  
+
 .gameimageheader {
   height: 50%;
   width: 50%;
 }
 
 h4 {
+  text-align: center;
+}
+
+footer {
+  background-color: #39522A;
+  color: white;
+  text-shadow: 2px 2px 4px #000000;
+  height: 10%;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+footer p {
+  margin-top: 10px;
   text-align: center;
 }
