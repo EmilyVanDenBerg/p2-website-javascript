@@ -1,1 +1,74 @@
-/* dit is filler code zodat er in ieder geval iets in staat */
+body, h1, h2, h3, p, ul {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+html, body {
+  height: 100%;
+}
+
+header {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+header, footer {
+  height: 10%;
+  width: 100%;
+  box-sizing: border-box;
+  text-shadow: 2px 2px 4px #000000;
+  color: white;
+}
+
+main {
+  height: 80%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-section, .middle-section, .bottom-section {
+  height: 33.333%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+header {
+  background-color: #73AF4E;
+}
+
+footer {
+  background-color: #39522A;
+}
+
+.middle-section, .bottom-section {
+  background-color: #fff;
+}
+
+.gameimages {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.gameimages tr {
+  display: flex;
+  justify-content: space-between;
+}
+
+.gameimages th {
+  text-align: center;
+  padding: 10px;
+  flex: 1;
+}
+  
+.gameimageheader {
+  height: 50%;
+  width: 50%;
+}
+
+h4 {
+  text-align: center;
+}
