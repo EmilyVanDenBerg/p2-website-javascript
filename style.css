@@ -103,6 +103,11 @@ main {
   width: 50%;
 }
 
+.goalimageheader {
+  height: 25%;
+  width: 25%;
+}
+
 h4 {
   text-align: center;
 }
@@ -123,4 +128,24 @@ footer {
 footer p {
   margin-top: 10px;
   text-align: center;
+}
+
+.gameimages a {
+  text-decoration: none;
+  color: black;
+}
+
+.gameimages button {
+  border: none;
+  width: 50%;
+  height: 10%;
+  background-color: #73AF4E;
+  color: white;
+  margin: 2.5%;
+  font-size: 125%;
+}
+
+.gameimages button:hover {
+  background-color: #39522A;
+  cursor: pointer;
 }
