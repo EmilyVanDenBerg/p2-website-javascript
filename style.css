@@ -103,6 +103,11 @@ main {
   width: 50%;
 }
 
+.kwfimage {
+  height: 33vh;
+  width: 33vw;
+}
+
 .goalimageheader {
   height: 25%;
   width: 25%;
