@@ -1,0 +1,16 @@
+body {
+    margin-left: 20%;
+    margin-top: 10%;
+    background-color: #202020;
+}
+
+#screen {
+    outline-style: solid;
+    outline-color: #FFBCF7;
+    outline-width: 5px;
+}
+
+@font-face {
+    font-family: 'PetMe64';
+    src: url("assets//fonts//PetMe64.ttf");
+}
