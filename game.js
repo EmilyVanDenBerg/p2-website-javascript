@@ -59,9 +59,10 @@ let player = {
     dead: false,
     hidden: false,
     movementBlock: [false, false],
+    airborneFrames: 0,
 
     ingame: false,
-    menuTab: 0,
+    menuTab: -1,
 
     //animation
     animationTimer: 0,
@@ -123,10 +124,6 @@ spriteSheets.conveyorSheet.src = "assets/sprites/conveyorSheet.png"
 spriteSheets.checkpointSheet = new Image()
 spriteSheets.checkpointSheet.src = "assets/sprites/checkpointSheet.png"
 
-//for testing
-let grid = new Image()
-grid.src = "assets/sprites/editorGrid.png"
-
 //music
 let music = {}
 
@@ -166,6 +163,9 @@ sounds.checkpoint.src = "assets/sounds/checkpoint.wav"
 let logo = new Image()
 logo.src = "assets/sprites/logo.png"
 
+let uwu = new Image()
+uwu.src = "assets/sprites/cami.png"
+
 let menuBG = new Image()
 menuBG.src = "assets/sprites/menuBG.png"
 
@@ -177,6 +177,13 @@ let stages = {
 }
 
 //inputs
+window.onclick = function() {
+    if (player.menuTab == -1) {
+        music.menu.play()
+        player.menuTab = 0
+    }
+}
+
 var pressedKeys = []
 window.onkeydown = function(e) {
     pressedKeys[e.code] = true
@@ -185,31 +192,35 @@ window.onkeydown = function(e) {
 
     if (player.ingame) {
 
-        if (player.flipKeys.includes(e.code) && player.canFlip && player.onGround) {
+        if (player.flipKeys.includes(e.code) && player.canFlip && player.airborneFrames <= 4) {
             flip(true)
-        }
-
-        if (e.code == "KeyR") {
+        } else if (e.code == "KeyR") {
             die()
         } else if (e.code == "Backquote") {
             player.debug = !player.debug
         }
+
     } else {
-        if (e.code == "Space") {
-            if (player.menuTab == 1) {
+        if (player.menuTab == 1) {
+            if (e.code == "Space") {
                 music.menu.pause()
                 loadStage(stages[player.menuSelectedLevel])
                 player.ingame = true
-            } else {
-                player.menuTab = 1
-                music.menu.play()
+            } else if ((e.code == "KeyW" || e.code == "ArrowUp") && player.menuSelectedLevel > 1) {
+                player.menuSelectedLevel -= 1
+                sounds.menuOption.play()
+            } else if ((e.code == "KeyS" || e.code == "ArrowDown") && player.menuSelectedLevel < 3) {
+                player.menuSelectedLevel += 1
+                sounds.menuOption.play()
             }
-        } else if ((e.code == "KeyW" || e.code == "ArrowUp") && player.menuSelectedLevel > 1) {
-            player.menuSelectedLevel -= 1
-            sounds.menuOption.play()
-        } else if ((e.code == "KeyS" || e.code == "ArrowDown") && player.menuSelectedLevel < 3) {
-            player.menuSelectedLevel += 1
-            sounds.menuOption.play()
+        } else if (player.menuTab == 0) {
+            if (e.code == "Space") {
+                sounds.menuOption.play()
+                player.menuTab = 1
+            }
+        } else if (player.menuTab == -1) {
+            music.menu.play()
+            player.menuTab = 0
         }
     }
 }
@@ -232,6 +243,7 @@ let nonSolids = [
     45, 46, 47, 48, //moving platform direction changers
     63, 64, //gravity lines
     65, 66, //checkpoints
+    67, //start position
 ]
 
 //background deco tiles always get drawn first (also not collidable btw)
@@ -337,12 +349,12 @@ function gameplayTick() {
             if (player.room.exits && player.room.exits.left) {
                 loadRoom(player.room.exits.left)
             }
-            player.x = canvas.width - 32
+            player.x = canvas.width - 24
         } else if (player.x > canvas.width - 10 && !player.facingLeft) {
             if (player.room.exits && player.room.exits.right) {
                 loadRoom(player.room.exits.right)
             }
-            player.x = -32
+            player.x = 0
         } else if (player.y < -player.height && player.flipped) {
             if (player.room.exits && player.room.exits.up) {
                 loadRoom(player.room.exits.up)
@@ -352,7 +364,7 @@ function gameplayTick() {
             if (player.room.exits && player.room.exits.down) {
                 loadRoom(player.room.exits.down)
             }
-            player.y = 0
+            player.y = -player.height + 32
         }
 
         if (player.gravityLineCooldown > 0) {
@@ -461,6 +473,38 @@ function gameplayTick() {
         })
 
         //physics (kill me please this took too god damn long)
+
+        //wall detection
+        let nearbyWalls = getWallTiles()
+
+        if (nearbyWalls[0][0] || nearbyWalls[0][1] || nearbyWalls[0][2]) {
+            player.movementBlock[0] = true //block moving left
+
+            if (nearbyWalls[0][0]) {
+                player.x = nearbyWalls[0][0].x + (32 - player.speedX / 2)
+            }
+            if (nearbyWalls[0][1]) {
+                player.x = nearbyWalls[0][1].x + (32 - player.speedX / 2)
+            }
+            if (nearbyWalls[0][2]) {
+                player.x = nearbyWalls[0][2].x + (32 - player.speedX / 2)
+            }
+        }
+
+        if (nearbyWalls[1][0] || nearbyWalls[1][1] || nearbyWalls[1][2]) {
+            player.movementBlock[1] = true //block moving right
+
+            if (nearbyWalls[1][0]) {
+                player.x = nearbyWalls[1][0].x - (32 + player.speedX)
+            }
+            if (nearbyWalls[1][1]) {
+                player.x = nearbyWalls[1][1].x - (32 + player.speedX)
+            }
+            if (nearbyWalls[1][2]) {
+                player.x = nearbyWalls[1][2].x - (32 + player.speedX)
+            }
+        }
+        
         //floor detection
         if (!player.onGround) {
             let floorTiles = getFloorTiles()
@@ -539,7 +583,9 @@ function gameplayTick() {
                     player.onGround = true
                     player.canFlip = true
 
-                    player.x += pair.direction == 0 ? -4: 4
+                    if ((pair.direction == 0 && !player.movementBlock[0]) || (pair.direction == 1 && !player.movementBlock[1])) {
+                        player.x += pair.direction == 0 ? -4: 4
+                    }
     
                     if (player.flipped) {
                         player.y = platformPosY + 32
@@ -588,20 +634,12 @@ function gameplayTick() {
         //still not on ground?
         if (!player.onGround) {
             player.justLanded = false
+            player.airborneFrames += 1
 
             //fall down (or up ([Extreme Demon] "Falling Up" by KrmaL | Geometry Dash))
             player.y += player.flipped ? -player.gravity : player.gravity
-        }
-
-        //wall detection
-        let nearbyWalls = getWallTiles()
-
-        if (nearbyWalls[0][0] || nearbyWalls[0][1] || nearbyWalls[0][2]) {
-            player.movementBlock[0] = true //block moving left
-        }
-
-        if (nearbyWalls[1][0] || nearbyWalls[1][1] || nearbyWalls[1][2]) {
-            player.movementBlock[1] = true //block moving right
+        } else {
+            player.airborneFrames = 0
         }
 
         //movement
@@ -640,13 +678,6 @@ function gameplayTick() {
             player.deathTimer = 0
             player.dead = false
             player.canFlip = true
-        }
-    }
-
-    //render debug grid
-    for (x = 0; x <= canvas.width; x += 32) {
-        for (y = 0; y <= canvas.height; y += 32) {
-            //screen.drawImage(grid, x, y)
         }
     }
 
@@ -744,7 +775,6 @@ function gameplayTick() {
     //draw fps and time
     screen.font = "16px PetMe64"
     screen.textAlign = "left"
-    screen.fillStyle = "white"
 
     let currTime = performance.now()
     let fps = Math.round(1000 / (currTime - player.lastFrame))
@@ -755,13 +785,6 @@ function gameplayTick() {
 
     //if using debug mode draw some more info
     if (player.debug) {
-        let currTime = performance.now()
-        let fps = Math.round(1000 / (currTime - player.lastFrame))
-        player.lastFrame = currTime
-
-        screen.font = "16px PetMe64"
-        screen.textAlign = "left"
-        screen.fillStyle = "white"
         screen.fillText(`x: ${player.x}`, 0, 64)
         screen.fillText(`y: ${player.y}`, 0, 80)
         screen.fillText(`room: ${player.room.id}`, 0, 96)
@@ -941,7 +964,37 @@ function loadStage(stageName) {
         if (music[stageName]) {
             music[stageName].play()
         }
-        loadRoom(1)
+
+        //spawn the player at a start position if one exists
+        let spawnPosition = false
+
+        Object.keys(stageData.rooms).forEach(id => {
+            stageData.rooms[id].roomData.forEach(tile => {
+                if (tile.id == 67) {
+                    spawnPosition = true
+
+                    player.x = tile.x
+                    player.y = tile.y - player.height + 32
+
+                    player.checkpoint = {
+                        stage: stageName,
+                        roomId: id,
+                        x: tile.x,
+                        y: tile.y,
+                        flipped: false,
+                    }
+
+                    loadRoom(id)
+
+                    return
+                }
+            })
+        })
+
+        //if no spawn position, spawn at start of stage
+        if (!spawnPosition) {
+            loadRoom(1)
+        }
     });
 }
 
@@ -1118,6 +1171,8 @@ function loadRoom(roomId) {
         } else if (tile.id == 65 || tile.id == 66) {
             //checkpoints, rendered seperately
             player.room.checkpoints.push(tile)
+        } else if (tile.id == 67) {
+            //start position
         } else {
             roomScreen.drawImage(spriteSheets.tileSheet, getTileSheetPosition(tile.id), 0, 32, 32, tile.x, tile.y, 32, 32)
             if (tile.subtexture) {
@@ -1131,8 +1186,23 @@ function loadRoom(roomId) {
 function menuTick() {
     screen.reset()
 
+    if (player.menuTab == -1) {
+        //"Uncaught (in promise) DOMException: play() failed because the user didn't interact with the document first."
+        //🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓🤓
+    
+        screen.fillStyle = "black"
+        screen.fillRect(0, 0, canvas.width, canvas.height)
+
+        screen.font = "32px PetMe64"
+        screen.fillStyle = "white"
+        screen.textAlign = "center"
+
+        screen.fillText("press any key to start!", canvas.width / 2, canvas.height / 2)
+        return
+    }
+
     //render background
-    screen.drawImage(menuBG, 0,- player.menuBackgroundY)
+    screen.drawImage(menuBG, 0, -player.menuBackgroundY)
     player.menuBackgroundY += 2
     if (player.menuBackgroundY >= 2880) {
         player.menuBackgroundY = 0
@@ -1140,6 +1210,9 @@ function menuTick() {
 
     //render logo
     screen.drawImage(logo, canvas.width / 2 - logo.width / 2, player.menuTab == 1 ? 100 : 250)
+
+    //me!!!
+    screen.drawImage(uwu, 0, 0, 48, 48, 8, canvas.height - 64 + 8, 64, 64)
 
     //draw level select / play thing
     screen.font = "24px PetMe64"
@@ -1159,7 +1232,7 @@ function menuTick() {
         screen.fillText(player.menuSelectedLevel == 3 ? "[WARP ZONE]" : "warp zone", canvas.width / 2, 450)
     } else {
         screen.fillStyle = "aqua"
-        screen.fillText("press [space] to play", canvas.width / 2, canvas.height - 250)
+        screen.fillText("press [SPACE] to play", canvas.width / 2, canvas.height - 250)
     }
 }
 

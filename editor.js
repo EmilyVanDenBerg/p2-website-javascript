@@ -48,7 +48,7 @@ spriteSheets.tileSheet.src = "assets/sprites/tileSheet.png"
 spriteSheets.subtextureSheet = new Image()
 spriteSheets.subtextureSheet.src = "assets/sprites/subtextureSheet.png"
 
-let objAmount = 66
+let objAmount = 67
 
 //inputs
 var pressedKeys = []
@@ -387,7 +387,7 @@ function main() {
 let emptyRoom = false
 if (!emptyRoom) {
     fetch("stages/spaceStation.json").then(response => response.json()).then(stageData => {
-        loadRoom(stageData.rooms["4"])
+        loadRoom(stageData.rooms["7"])
     });
 }
 
