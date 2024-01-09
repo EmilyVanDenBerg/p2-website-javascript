@@ -11,6 +11,12 @@ body {
 }
 
 @font-face {
-    font-family: 'PetMe64';
+    font-family: "PetMe64";
     src: url("assets//fonts//PetMe64.ttf");
 }
+
+@font-face {
+    font-family: "SM64";
+    src: url("assets//fonts//SM64.ttf");
+}
+

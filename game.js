@@ -31,6 +31,7 @@ let player = {
         name: "the middle of nowhere",
         tiles: [],
         exits: {},
+        font: "PetMe64",
         color: {"hue": 0, "saturation": 100, "brightness": 100},
         breakingPlatforms: [],
         movingPlatforms: [],
@@ -83,8 +84,6 @@ let player = {
     flipKeys: ["Space", "ArrowUp", "ArrowDown", "KeyW", "KeyS"],
 
     //misc
-    lastTick: new Date(),
-    lastFps: 60,
     lastFrame: performance.now(),
 
     //menu stuff
@@ -313,18 +312,21 @@ function gameplayTick() {
         screen.fillRect(0, 0, canvas.width, canvas.height)
 
         player.bgStars.forEach((star, index) => {
+            //slower stars are further away and so they move slower and are also darker
             let color = 225 - (star.speed * 15)
 
             screen.fillStyle = `rgb(${color}, ${color}, ${color})`
             screen.fillRect(star.x, star.y, 5, 5)
 
             star.x -= star.speed
+
+            //delete it if it's outside the screen (to prevent cluttering and lag)
             if (star.x <= -32) {
                 player.bgStars.splice(index, 1)
             }
         })
 
-        //make a new star if it's time to
+        //make a new star every two frames
         if (player.bgStarTimer >= 2) {
             player.bgStarTimer = 0
 
@@ -671,7 +673,7 @@ function gameplayTick() {
             if (player.room.id != player.checkpoint.roomId) {
                 loadRoom(player.checkpoint.roomId)
             }
-            player.x = player.checkpoint.x
+            player.x = player.checkpoint.x - 24
             player.y = player.checkpoint.flipped ? player.checkpoint.y : player.checkpoint.y - player.height + 32
             player.flipped = player.checkpoint.flipped
 
@@ -728,7 +730,7 @@ function gameplayTick() {
 
     //render checkpoints
     player.room.checkpoints.forEach(cp => {
-        //no, not that kind of cp (i'm not crazen (or guitar (or jagdp (or punky))))
+        //no, not that kind of cp (i'm not crazen (or guitar (or jagdp)))
 
         let active = false
         if (cp.x == player.checkpoint.x && cp.y == player.checkpoint.y) {
@@ -737,10 +739,10 @@ function gameplayTick() {
 
         if (cp.id == 66) {
             //flipped
-            screen.drawImage(spriteSheets.checkpointSheet, active ? 192 : 128, 0, 64, 64, cp.x - 16, cp.y, 64, 64)
+            screen.drawImage(spriteSheets.checkpointSheet, active ? 192 : 128, 0, 64, 64, cp.x - 24, cp.y, 48, 48)
         } else {
             //not flipped
-            screen.drawImage(spriteSheets.checkpointSheet, active ? 64 : 0, 0, 64, 64, cp.x - 16, cp.y - 32, 64, 64)
+            screen.drawImage(spriteSheets.checkpointSheet, active ? 64 : 0, 0, 64, 64, cp.x - 24, cp.y - 16, 48, 48)
         }
     })
 
@@ -758,7 +760,7 @@ function gameplayTick() {
         //set animation to walking
         sheetPosition = player.flipped ? (player.facingLeft ? getPlrSheetPosition(8) : getPlrSheetPosition(7)) : (player.facingLeft ? getPlrSheetPosition(6) : getPlrSheetPosition(5))
     } else {
-        sheetPosition = player  .flipped ? (player.facingLeft ? getPlrSheetPosition(4) : getPlrSheetPosition(3)) : (player.facingLeft ? getPlrSheetPosition(2) : getPlrSheetPosition(1))
+        sheetPosition = player.flipped ? (player.facingLeft ? getPlrSheetPosition(4) : getPlrSheetPosition(3)) : (player.facingLeft ? getPlrSheetPosition(2) : getPlrSheetPosition(1))
     }
     
     screen.drawImage(spriteSheets.playerSprite, sheetPosition, 0, 48, 84, player.x, player.y, 48, 84)
@@ -767,7 +769,7 @@ function gameplayTick() {
     screen.fillStyle = "black"
     screen.fillRect(0, canvas.height - 32, canvas.width, 32)
     
-    screen.font = "24px PetMe64"
+    screen.font = `24px ${player.room.font}`
     screen.fillStyle = "white"
     screen.textAlign = "center"
     screen.fillText(player.room.name, canvas.width / 2, canvas.height - 8)
@@ -886,6 +888,8 @@ function getTouchingTiles(noSolids) {
             return
         }
 
+        //todo: rewrite this because it sucks ass
+
         let tileCenterX = tile.x + 16
         let tileCenterY = tile.y + 16
 
@@ -921,6 +925,10 @@ function getCollidingTiles(tile) {
 }
 
 function flip(self) {
+    if (player.dead) {
+        return
+    }
+
     player.flipped = !player.flipped
     
     if (self) {
@@ -970,7 +978,7 @@ function loadStage(stageName) {
 
         Object.keys(stageData.rooms).forEach(id => {
             stageData.rooms[id].roomData.forEach(tile => {
-                if (tile.id == 67) {
+                if (tile.id == 67 && !pressedKeys["KeyQ"]) {
                     spawnPosition = true
 
                     player.x = tile.x
@@ -1009,19 +1017,19 @@ function loadRoom(roomId) {
         player.room.color = roomData.color
     }
 
-    if (roomData.exits) {
-        player.room.exits = roomData.exits
-    } else {
-        player.room.exits = {}
-    }
+    player.room.exits = roomData.exits || {}
+
+    player.room.font = roomData.font || "PetMe64"
 
     player.room.tiles = roomData.roomData
     let tiles = roomData.roomData
 
-    //the room screen only gets drawn once, to a seperate canvas, when the room loads
-    //then gets copied over to the actual screen
-    //i do this because redrawing it every frame absolutely destroys the framerate
-    //it's messy but it works ok i don't want to touch this anymore
+    /*
+        the room screen only gets drawn once, to a seperate canvas, when the room loads
+        then gets copied over to the actual screen
+        i do this because redrawing it every frame absolutely destroys the framerate
+        it's messy but it works ok i don't want to touch this anymore
+    */
 
     roomScreen.reset()
     roomScreen.filter = `hue-rotate(${player.room.color.hue}deg) saturate(${player.room.color.saturation}%) brightness(${player.room.color.brightness}%)`
@@ -1173,6 +1181,8 @@ function loadRoom(roomId) {
             player.room.checkpoints.push(tile)
         } else if (tile.id == 67) {
             //start position
+        } else if (tile.id == 68) {
+            //simply an invisible tile, nothing else to it
         } else {
             roomScreen.drawImage(spriteSheets.tileSheet, getTileSheetPosition(tile.id), 0, 32, 32, tile.x, tile.y, 32, 32)
             if (tile.subtexture) {

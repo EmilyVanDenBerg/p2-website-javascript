@@ -48,10 +48,11 @@ spriteSheets.tileSheet.src = "assets/sprites/tileSheet.png"
 spriteSheets.subtextureSheet = new Image()
 spriteSheets.subtextureSheet.src = "assets/sprites/subtextureSheet.png"
 
-let objAmount = 67
+let objAmount = 68
 
 //inputs
-var pressedKeys = []
+let pressedKeys = []
+let arrowKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]
 window.onkeydown = function(e) {
     pressedKeys[e.code] = true
     
@@ -77,9 +78,9 @@ window.onkeydown = function(e) {
     } else if (e.code == "KeyS") {
         editor.cursor.y += 32
         editor.shift.end.y += 32
-    } else if (e.code == "ArrowLeft" && editor.tileId > 1) {
+    } else if (e.code == "ArrowLeft" && editor.tileId > 1 && !editor.shifting) {
         editor.tileId -= 1
-    } else if (e.code == "ArrowRight" && editor.tileId < objAmount) {
+    } else if (e.code == "ArrowRight" && editor.tileId < objAmount && !editor.shifting) {
         editor.tileId += 1
     } else if (e.code == "KeyQ" && editor.subtexture > 0) {
         editor.subtexture -= 1
@@ -108,6 +109,8 @@ window.onkeydown = function(e) {
 
             deleteObject(object)
         }
+    } else if (arrowKeys.includes(e.code) && editor.shifting) {
+        shiftAction("move", {key: e.code})
     } else if (e.code == "KeyR") {
         editor.viewControls = !editor.viewControls
     } else if (e.code == "KeyT") {
@@ -170,7 +173,7 @@ function swapColor() {
     }
     drawRoom()
 }
-function shiftAction(type) {
+function shiftAction(type, extra) {
     if (type == "place") {
         for (x = editor.shift.start.x; x <= editor.shift.end.x; x += 32) {
             for (y = editor.shift.start.y; y <= editor.shift.end.y; y += 32) {
@@ -194,6 +197,51 @@ function shiftAction(type) {
                 deleteObject(object)
             }
         }
+    } else if (type == "move") {
+        let objects = []
+
+        //this is inefficient as balls i think but whatever
+        for (x = editor.shift.start.x; x <= editor.shift.end.x; x += 32) {
+            for (y = editor.shift.start.y; y <= editor.shift.end.y; y += 32) {
+                editor.tiles.forEach(tile => {
+                    if (tile.x == x && tile.y == y && tile.layer == editor.layer) {
+                        objects.push(tile)
+                    }
+                })
+            }
+        }
+
+        switch(extra.key) {
+            case "ArrowUp":
+                editor.shift.start.y -= 32
+                editor.shift.end.y -= 32
+                objects.forEach(tile => {
+                    tile.y -= 32
+                })
+                break
+            case "ArrowDown":
+                editor.shift.start.y += 32
+                editor.shift.end.y += 32
+                objects.forEach(tile => {
+                    tile.y += 32
+                })
+                break
+            case "ArrowLeft":
+                editor.shift.start.x -= 32
+                editor.shift.end.x -= 32
+                objects.forEach(tile => {
+                    tile.x -= 32
+                })
+                break
+            case "ArrowRight":
+                editor.shift.start.x += 32
+                editor.shift.end.x += 32
+                objects.forEach(tile => {
+                    tile.x += 32
+                })
+                break
+        }
+        drawRoom()
     }
 }
 
@@ -320,6 +368,7 @@ function tick() {
         screen.fillText(`color: ${editor.color.hue},${editor.color.saturation},${editor.color.brightness}`, 0, 48)
         screen.fillText(`cursor: ${editor.cursor.x},${editor.cursor.y}`, 0, 64)
         screen.fillText(`layer: ${editor.layer}`, 0, 80)
+        screen.fillText(`shift: ${editor.shift.start.x},${editor.shift.start.y} ${editor.shift.end.x},${editor.shift.end.y}`, 0, 96)
     }
 
     //view controls
@@ -380,14 +429,13 @@ function loadRoom(roomData) {
 function main() {
     tick()
 
-   requestAnimationFrame(tick)
-   setTimeout(main, 100)
+   requestAnimationFrame(main)
 }
 
 let emptyRoom = false
 if (!emptyRoom) {
     fetch("stages/spaceStation.json").then(response => response.json()).then(stageData => {
-        loadRoom(stageData.rooms["7"])
+        loadRoom(stageData.rooms["19"])
     });
 }
 
@@ -403,4 +451,8 @@ main()
     ]
 }
 
+end off space station:
+- emergency exit tunnel room, go right
+- death moon ending style entrance
+- teleporter ending room
 */
