@@ -1,0 +1,19 @@
+# 2D Game Project
+## 2D Game
+
+This simple 2D game allows the player (red ball) to move using W, A, S, D keys and shoot bullets with the Spacebar. The objective is to hit the enemy (blue ball) with bullets to reset its position.
+
+## How to Play
+
+1. Click the "Start Game" button.
+2. Use the following keys for player movement:
+   - W: Move up
+   - A: Move left
+   - S: Move down
+   - D: Move right
+3. Press the Spacebar to shoot bullets and eliminate the enemy.
+4. Have fun!
+
+## Author
+
+Tim Bosma
