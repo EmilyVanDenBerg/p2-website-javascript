@@ -10,11 +10,29 @@ let x = 400;
 let y = canvas.height / 2; // Start de bal vanuit het midden van het scherm
 let speed = 5;
 let radius = 15;
-let gravity = 1; // Pas de zwaartekrachtwaarde aan om de valssnelheid van de bal te regelen
 
 let leftPressed = false;
 let rightPressed = false;
 let mousePressed = false;
+
+let tellerCyclus = 0;
+let cyclus = 3;
+let gravity = 1;
+let jumpForce = -7; // Constante sprongkracht
+
+// Functie om het canvas en de bal te tekenen
+function drawCanvasAndBall() {
+    ctx.fillStyle = "#d9d9d9";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2, true);
+    ctx.fillStyle = 'red';
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.closePath();
+}
 
 // Event listeners voor toetsenbord en muis
 document.addEventListener('keydown', function(event) {
@@ -36,6 +54,7 @@ document.addEventListener('keyup', function(event) {
 document.addEventListener('mousedown', function(event) {
     if (event.button === 0) {
         mousePressed = true;
+        gravity = jumpForce;
     }
 });
 
@@ -44,9 +63,6 @@ document.addEventListener('mouseup', function(event) {
         mousePressed = false;
     }
 });
-
-let tellerCyclus = 0;
-let cyclus = 3;
 
 // Functie voor de zwaartekracht
 function ballGravity() {
@@ -65,26 +81,6 @@ function ballGravity() {
         gravity++; // Verhoog de zwaartekracht na een bepaald aantal frames
         tellerCyclus = 0;
     }
-    
-    document.addEventListener('mousedown', function(event) {
-        if (event.button === 0) {
-            tellerCyclus++;
-            mousePressed = true;
-            if (tellerCyclus > cyclus) {
-                gravity = gravity - 3;
-                tellerCyclus = 0;
-                if (gravity < -10) {
-                    gravity = gravity + 10;
-                }
-            }
-        }
-    });
-    
-    document.addEventListener('mouseup', function(event) {
-        if (event.button === 0) {
-            mousePressed = false;
-        }
-    });
 }
 
 // Functie om invoer te verwerken
@@ -100,20 +96,6 @@ function handleInput() {
             x = canvas.width - radius;
         }
     }
-}
-
-// Functie om het canvas en de bal te tekenen
-function drawCanvasAndBall() {
-    ctx.fillStyle = "#d9d9d9";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2, true);
-    ctx.fillStyle = 'red';
-    ctx.fill();
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.closePath();
 }
 
 // Functie voor de constante updates elke mogelijke frame
