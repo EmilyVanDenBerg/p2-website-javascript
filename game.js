@@ -54,7 +54,6 @@ let player = {
     touchedGravityLine: false,
     gravityLineTick: 1,
     gravityLineCooldown: 0,
-    gravityLineEasing: 3,
     walking: false,
     facingLeft: false,
     dead: false,
@@ -77,8 +76,11 @@ let player = {
         min: 0,
         sec: 0,
         frames: 0,
-        totalFrames: 0,
     },
+    
+    //i'm funny like that
+    winFrames: 0,
+    winMessage: "",
 
     //keys
     flipKeys: ["Space", "ArrowUp", "ArrowDown", "KeyW", "KeyS"],
@@ -94,9 +96,18 @@ let player = {
     bgStars: [],
     bgStarTimer: 0,
 
+    //laboratory background
+    bgLines: [],
+    bgLineTimer: 0,
+
+    //warp zone background
+    bgPosY: 0,
+
     //tile animations
     conveyorSpriteTimer: 0,
     conveyorSpriteIndex: 1,
+    teleporterSpriteTimer: 0,
+    teleporterSpriteIndex: 0,
 
     //shhhh
     debug: true,
@@ -123,6 +134,9 @@ spriteSheets.conveyorSheet.src = "assets/sprites/conveyorSheet.png"
 spriteSheets.checkpointSheet = new Image()
 spriteSheets.checkpointSheet.src = "assets/sprites/checkpointSheet.png"
 
+spriteSheets.teleporterSheet = new Image()
+spriteSheets.teleporterSheet.src = "assets/sprites/teleporterSheet.png"
+
 //music
 let music = {}
 
@@ -133,6 +147,10 @@ music.menu.loop = true
 music.spaceStation = new Audio()
 music.spaceStation.src = "assets/music/spaceStation.ogg"
 music.spaceStation.loop = true
+
+music.laboratory = new Audio()
+music.laboratory.src = "assets/music/laboratory.ogg"
+music.laboratory.loop = true
 
 //sounds
 let sounds = {}
@@ -158,20 +176,38 @@ sounds.gravityLine.src = "assets/sounds/gravityLine.wav"
 sounds.checkpoint = new Audio()
 sounds.checkpoint.src = "assets/sounds/checkpoint.wav"
 
+sounds.triggerTeleporter = new Audio()
+sounds.triggerTeleporter.src = "assets/sounds/triggerTeleporter.wav"
+
+sounds.teleporterFlash = new Audio()
+sounds.teleporterFlash.src = "assets/sounds/teleporterFlash.wav"
+
+sounds.activateTeleporter = new Audio()
+sounds.activateTeleporter.src = "assets/sounds/activateTeleporter.wav"
+
+sounds.levelComplete = new Audio()
+sounds.levelComplete.src = "assets/sounds/levelComplete.ogg"
+sounds.levelComplete.volume = 0.75
+
 //other images
-let logo = new Image()
-logo.src = "assets/sprites/logo.png"
+let images = {}
 
-let uwu = new Image()
-uwu.src = "assets/sprites/cami.png"
+images.logo = new Image()
+images.logo.src = "assets/sprites/logo.png"
 
-let menuBG = new Image()
-menuBG.src = "assets/sprites/menuBG.png"
+images.uwu = new Image()
+images.uwu.src = "assets/sprites/cami.png"
+
+images.menuBG = new Image()
+images.menuBG.src = "assets/sprites/menuBG.png"
+
+images.levelComplete = new Image()
+images.levelComplete.src = "assets/sprites/levelComplete.png"
 
 //stage ids and their internal names
 let stages = {
     1: "spaceStation",
-    2: "test",
+    2: "laboratory",
     3: "test",
 }
 
@@ -190,8 +226,16 @@ window.onkeydown = function(e) {
     //console.log(e.code)
 
     if (player.ingame) {
+        if (player.winFrames >= 760) {
+            player.menuTab = 0
+            player.ingame = false
+            player.winFrames = 0
 
-        if (player.flipKeys.includes(e.code) && player.canFlip && player.airborneFrames <= 4) {
+            music.menu.currentTime = 0
+            music.menu.play()
+
+            sounds.menuOption.play()
+        } else if (player.flipKeys.includes(e.code) && player.canFlip && player.airborneFrames <= 4) {
             flip(true)
         } else if (e.code == "KeyR") {
             die()
@@ -204,7 +248,6 @@ window.onkeydown = function(e) {
             if (e.code == "Space") {
                 music.menu.pause()
                 loadStage(stages[player.menuSelectedLevel])
-                player.ingame = true
             } else if ((e.code == "KeyW" || e.code == "ArrowUp") && player.menuSelectedLevel > 1) {
                 player.menuSelectedLevel -= 1
                 sounds.menuOption.play()
@@ -243,11 +286,14 @@ let nonSolids = [
     63, 64, //gravity lines
     65, 66, //checkpoints
     67, //start position
+    69, //ending teleporter
+    71, 72, 73, 74, //spikes (laboratory tileset)
 ]
 
 //background deco tiles always get drawn first (also not collidable btw)
 let backgroundTiles = [
     50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, //space station
+    63, 64, //gravity lines (layered behind spikes)
 ]
 
 backgroundTiles.forEach(id => {
@@ -257,6 +303,7 @@ backgroundTiles.forEach(id => {
 //list of tiles that kill you
 let hazards = [
     3, 4, 5, 6, //spikes
+    71, 72, 73, 74, //spikes (laboratory tileset)
 ]
 
 let hitboxLeniency = {
@@ -265,6 +312,13 @@ let hitboxLeniency = {
     4: [8, 0],
     5: [8, 0],
     6: [8, 0],
+
+    //spikes (laboratory tileset) theyre different because of the gravity lines
+    //call me lazy but idc
+    71: [8, 8],
+    72: [8, 8],
+    73: [8, 8],
+    74: [8, 8],
 
     //gravity lines (better hitboxes)
     63: [0, 12],
@@ -282,6 +336,21 @@ function numPadding(num) {
     return num
 }
 
+//i'm feeling a little silly :3
+let winMessages = [
+    "after a mental breakdown",
+    "do it again I wasn't looking",
+    "go faster next time",
+    "massive skill issue you got there",
+    "that's crazy",
+    "simply too skilled",
+    "too easy",
+    "woah",
+    "i can't react or i'm gonna cough so much",
+    "easier than back on track",
+    "i verified the golden lets go",
+]
+
 let plrGravity = player.gravity //save it for use with gravity lines
 
 //main function (player movement, sprite updates, etc)
@@ -295,18 +364,19 @@ function gameplayTick() {
     player.movementBlock = [false, false]
 
     //timer
-    player.timer.totalFrames += 1
-    player.timer.frames += 1
-    if (player.timer.frames >= 60) {
-        player.timer.frames = 0
-        player.timer.sec += 1
-        if (player.timer.sec >= 60) {
-            player.timer.sec = 0
-            player.timer.min += 1
+    if (player.winFrames == 0) {
+        player.timer.frames += 1
+        if (player.timer.frames >= 60) {
+            player.timer.frames = 0
+            player.timer.sec += 1
+            if (player.timer.sec >= 60) {
+                player.timer.sec = 0
+                player.timer.min += 1
+            }
         }
     }
 
-    //if in the space station, render a fancy background
+    //fancy backgrounds
     if (player.stage == "spaceStation") {
         screen.fillStyle = "black"
         screen.fillRect(0, 0, canvas.width, canvas.height)
@@ -339,6 +409,100 @@ function gameplayTick() {
         }
 
         player.bgStarTimer += 1
+    } else if (player.stage == "laboratory") {
+        screen.fillStyle = `hsl(${player.room.color.hue}, ${player.room.color.saturation}%, 3%)`
+        screen.fillRect(0, 0, canvas.width, canvas.height)
+
+        //todo: fancy background
+
+        player.bgLines.forEach((line, index) => {
+            let horizontal = line.direction == 1 || line.direction == 2
+
+            //outline
+            screen.fillStyle = `hsl(${player.room.color.hue}, ${player.room.color.saturation}%, 35%)`
+            screen.fillRect(line.x, line.y, horizontal ? 125 : 50, horizontal ? 50 : 125)
+
+            //inner
+            screen.fillStyle = `hsl(${player.room.color.hue}, ${player.room.color.saturation}%, 5%)`
+            screen.fillRect(line.x + 3, line.y + 3, (horizontal ? 125 : 50) - 6, (horizontal ? 50 : 125) - 6)
+
+            switch(line.direction) {
+                case 1:
+                    line.x += line.speed
+                    
+                    if (line.x >= canvas.width) {
+                        player.bgLines.splice(index, 1)
+                    }
+
+                    break;
+                case 2:
+                    line.x -= line.speed
+
+                    if (line.x <= -150) {
+                        player.bgLines.splice(index, 1)
+                    }
+
+                    break;
+                case 3:
+                    line.y += line.speed
+
+                    if (line.y >= canvas.height) {
+                        player.bgLines.splice(index, 1)
+                    }
+
+                    break;
+                case 4:
+                    line.y -= line.speed
+
+                    if (line.y <= -150) {
+                        player.bgLines.splice(index, 1)
+                    }
+
+                    break;
+            }
+        })
+
+        if (player.bgLineTimer >= 5) {
+            player.bgLineTimer = 0
+
+            let direction = Math.floor(Math.random() * 4 + 1)
+            let x = 0
+            let y = 0
+
+            switch(direction) {
+                case 1:
+                    //horizontal left > right
+                    x = -50
+                    y = Math.floor(Math.random() * canvas.height)
+                    break
+                case 2:
+                    //horizontal right > left
+                    x = canvas.width
+                    y = Math.floor(Math.random() * canvas.height)
+                    break
+                case 3:
+                    //vertical up > down
+                    x = Math.floor(Math.random() * canvas.width)
+                    y = -50
+                    break
+                case 4:
+                    //vertical down > up
+                    x = Math.floor(Math.random() * canvas.width)
+                    y = canvas.height
+                    break
+            }
+
+            let line = {
+                x: x,
+                y: y,
+                speed: 20,
+                direction: direction,
+            }
+
+            player.bgLines.push(line)
+        }
+
+        player.bgLineTimer += 1
     }
 
     //now the real part
@@ -376,18 +540,18 @@ function gameplayTick() {
         //if the player touched a gravity line, flip their gravity smoothly
         if (player.touchedGravityLine) {
             if (player.gravityLineTick == 1) {
-                player.gravity -= player.gravityLineEasing
+                player.gravity -= 3
                 if (player.gravity <= 0) {
                     flip(false)
                     player.gravityLineTick = 2
                 }
             } else if (player.gravityLineTick == 2) {
-                player.gravity += player.gravityLineEasing
+                player.gravity += 3
                 if (player.gravity >= plrGravity) {
                     player.touchedGravityLine = false
                     player.gravity = plrGravity
                     player.gravityLineTick = 1
-                    player.gravityLineCooldown = 10
+                    player.gravityLineCooldown = 5
                 }
             }
         }
@@ -667,6 +831,11 @@ function gameplayTick() {
     } else {
         //if you're dead
 
+        //fix gravity line stuff
+        player.gravityLineTick = 1
+        player.gravity = plrGravity
+        player.touchedGravityLine = false
+        
         //update death timer, and respawn player if they've been dead for long enough
         player.deathTimer += 1
         if (player.deathTimer > 60) {
@@ -748,6 +917,19 @@ function gameplayTick() {
 
     screen.filter = "none"
 
+    //render ending teleporter if it exists and make the ending sequence play if it isn't already
+    player.room.tiles.forEach(tile => {
+        if (tile.id == 69) {
+            screen.drawImage(spriteSheets.teleporterSheet, 384 * player.teleporterSpriteIndex, 0, 384, 384, tile.x, tile.y, 384, 384)
+
+            if (player.x >= tile.x - 32 && player.x <= tile.x + 384 && player.y >= tile.y - 32 && player.y <= tile.y + 384 && player.winFrames == 0) {
+                player.winFrames = 1
+            }
+
+            return
+        }
+    })
+
     //render player
     let sheetPosition = 0
     if (player.dead) {
@@ -763,37 +945,126 @@ function gameplayTick() {
         sheetPosition = player.flipped ? (player.facingLeft ? getPlrSheetPosition(4) : getPlrSheetPosition(3)) : (player.facingLeft ? getPlrSheetPosition(2) : getPlrSheetPosition(1))
     }
     
-    screen.drawImage(spriteSheets.playerSprite, sheetPosition, 0, 48, 84, player.x, player.y, 48, 84)
+    if (!player.hidden) {
+        screen.drawImage(spriteSheets.playerSprite, sheetPosition, 0, 48, 84, player.x, player.y, 48, 84)
+    }
 
-    //render room name
-    screen.fillStyle = "black"
-    screen.fillRect(0, canvas.height - 32, canvas.width, 32)
     
-    screen.font = `24px ${player.room.font}`
-    screen.fillStyle = "white"
-    screen.textAlign = "center"
-    screen.fillText(player.room.name, canvas.width / 2, canvas.height - 8)
+    //ui stuff
+    //dont render if the player is in the win cutscene
+    if (player.winFrames == 0) {
+        //render room name
+        screen.fillStyle = "black"
+        screen.fillRect(0, canvas.height - 32, canvas.width, 32)
 
-    //draw fps and time
-    screen.font = "16px PetMe64"
-    screen.textAlign = "left"
+        screen.font = `24px ${player.room.font}`
+        screen.fillStyle = "white"
+        screen.textAlign = "center"
+        screen.fillText(player.room.name, canvas.width / 2, canvas.height - 8)
 
-    let currTime = performance.now()
-    let fps = Math.round(1000 / (currTime - player.lastFrame))
-    player.lastFrame = currTime
+        //draw fps and time
+        screen.font = "16px PetMe64"
+        screen.textAlign = "left"
 
-    screen.fillText(`FPS: ${fps}`, 0, 16)
-    screen.fillText(`time: ${player.timer.min}:${numPadding(player.timer.sec)}.${numPadding(Math.floor(player.timer.frames / 60 * 100))}`, 0, 32)
+        let currTime = performance.now()
+        let fps = Math.round(1000 / (currTime - player.lastFrame))
+        player.lastFrame = currTime
 
-    //if using debug mode draw some more info
-    if (player.debug) {
-        screen.fillText(`x: ${player.x}`, 0, 64)
-        screen.fillText(`y: ${player.y}`, 0, 80)
-        screen.fillText(`room: ${player.room.id}`, 0, 96)
-        screen.fillText(`grounded: ${player.onGround}`, 0, 112)
-        screen.fillText(`flipped: ${player.flipped}`, 0, 128)
-        screen.fillText(`deaths: ${player.deaths}`, 0, 144)
-        screen.fillText(`flips: ${player.flips}`, 0, 160)
+        screen.fillText(`FPS: ${fps}`, 0, 16)
+        screen.fillText(`time: ${player.timer.min}:${numPadding(player.timer.sec)}.${numPadding(Math.floor(player.timer.frames / 60 * 100))}`, 0, 32)
+
+        //if using debug mode draw some more info
+        if (player.debug) {
+            screen.fillText(`x: ${player.x}`, 0, 64)
+            screen.fillText(`y: ${player.y}`, 0, 80)
+            screen.fillText(`room: ${player.room.id}`, 0, 96)
+            screen.fillText(`grounded: ${player.onGround}`, 0, 112)
+            screen.fillText(`flipped: ${player.flipped}`, 0, 128)
+            screen.fillText(`deaths: ${player.deaths}`, 0, 144)
+            screen.fillText(`flips: ${player.flips}`, 0, 160)
+        }
+    }
+
+    //handle win cutscene
+    if (player.winFrames >= 1) {
+        if (player.winFrames == 1) {
+            sounds.triggerTeleporter.play()
+        }
+
+        if ((player.winFrames >= 60 && player.winFrames <= 68) || (player.winFrames >= 120 && player.winFrames <= 128) || (player.winFrames >= 150 && player.winFrames <= 158)) {
+            screen.fillStyle = "white"
+            screen.fillRect(0, 0, canvas.width, canvas.height)
+
+            if ([60, 120, 150].includes(player.winFrames)) {
+                sounds.teleporterFlash.play()
+            }
+        }
+
+        if (player.winFrames == 220) {
+            player.hidden = true
+            sounds.activateTeleporter.play()
+            if (music[player.stage]) {
+                music[player.stage].pause()
+            }
+        }
+
+        if (player.winFrames < 220) {
+            player.teleporterSpriteTimer += 1
+            if (player.teleporterSpriteTimer >= 4) {
+                player.teleporterSpriteTimer = 0
+                player.teleporterSpriteIndex += 1
+                if (player.teleporterSpriteIndex > 4) {
+                    player.teleporterSpriteIndex = 1
+                }
+            }
+        } else {
+            player.teleporterSpriteIndex = 0
+        }
+
+        if (player.winFrames == 320) {
+            sounds.levelComplete.play()
+            player.winMessage = winMessages[Math.floor(Math.random() * winMessages.length)]
+        }
+
+        if (player.winFrames >= 320) {
+            screen.drawImage(images.levelComplete, canvas.width / 2 - images.levelComplete.width / 2, 40)
+
+            screen.textAlign = "center"
+            screen.font = "24px PetMe64"
+            screen.fillStyle = "white"
+
+            if (player.winFrames >= 420) {
+                screen.fillText(`You've completed the ${player.stageData.name}`, canvas.width / 2, 180)
+            }
+
+            if (player.winFrames >= 490) {
+                screen.fillText(`Flips: ${player.flips}`, canvas.width / 2, 290)
+            }
+
+            if (player.winFrames >= 505) {
+                screen.fillText(`Deaths: ${player.deaths}`, canvas.width / 2, 330)
+            }
+
+            if (player.winFrames >= 520) {
+                screen.fillText(`Time: ${player.timer.min}:${numPadding(player.timer.sec)}.${numPadding(Math.floor(player.timer.frames / 60 * 100))}`, canvas.width / 2, 370)
+            }
+
+            if (player.winFrames >= 560) {
+                screen.fillText("Congratulations!", canvas.width / 2, 475)
+            }
+
+            if (player.winFrames >= 695) {
+                screen.font = "16px PetMe64"
+                screen.fillText(`\"${player.winMessage}\"`, canvas.width / 2, 500)
+            }
+
+            if (player.winFrames >= 760) {
+                screen.font = "24px PetMe64"
+                screen.fillText("Press [SPACE] to continue", canvas.width / 2, 600)
+            }
+        }
+
+        player.winFrames += 1
     }
 }
 
@@ -817,6 +1088,10 @@ function getWallTiles() {
 
     player.room.tiles.forEach(tile => {
         if (nonSolids.includes(tile.id)) {
+            return
+        }
+
+        if (tile.id == 70 && player.winFrames == 0) {
             return
         }
 
@@ -887,8 +1162,8 @@ function getTouchingTiles(noSolids) {
         if (noSolids && !nonSolids.includes(tile.id)) {
             return
         }
-
-        //todo: rewrite this because it sucks ass
+        
+        //yes i know this is terrible, noi i'm not fixing it i have better things to do
 
         let tileCenterX = tile.x + 16
         let tileCenterY = tile.y + 16
@@ -931,7 +1206,7 @@ function flip(self) {
 
     player.flipped = !player.flipped
     
-    if (self) {
+    if (self && player.winFrames == 0) {
         player.flips += 1
         player.canFlip = false
 
@@ -944,7 +1219,7 @@ function flip(self) {
 }
 
 function die() {
-    if (player.dead) {
+    if (player.dead || player.winFrames > 0) {
         return
     }
     
@@ -966,10 +1241,24 @@ function loadStage(stageName) {
             flipped: false,
         }
 
+        //reset stuff
         player.x = stageData.spawn.x
         player.y = stageData.spawn.y
 
+        player.hidden = false
+        player.timer = {
+            min: 0,
+            sec: 0,
+            frames: 0,
+        }
+        player.deaths = 0
+        player.flips = 0
+        player.flipped = false
+
+        player.ingame = true
+
         if (music[stageName]) {
+            music[stageName].currentTime = 0
             music[stageName].play()
         }
 
@@ -1183,6 +1472,10 @@ function loadRoom(roomId) {
             //start position
         } else if (tile.id == 68) {
             //simply an invisible tile, nothing else to it
+        } else if (tile.id == 69) {
+            //ending teleporter
+        } else if (tile.id == 70) {
+            //ending blockades
         } else {
             roomScreen.drawImage(spriteSheets.tileSheet, getTileSheetPosition(tile.id), 0, 32, 32, tile.x, tile.y, 32, 32)
             if (tile.subtexture) {
@@ -1212,17 +1505,17 @@ function menuTick() {
     }
 
     //render background
-    screen.drawImage(menuBG, 0, -player.menuBackgroundY)
+    screen.drawImage(images.menuBG, 0, -player.menuBackgroundY)
     player.menuBackgroundY += 2
     if (player.menuBackgroundY >= 2880) {
         player.menuBackgroundY = 0
     }
 
     //render logo
-    screen.drawImage(logo, canvas.width / 2 - logo.width / 2, player.menuTab == 1 ? 100 : 250)
+    screen.drawImage(images.logo, canvas.width / 2 - images.logo.width / 2, player.menuTab == 1 ? 100 : 250)
 
     //me!!!
-    screen.drawImage(uwu, 0, 0, 48, 48, 8, canvas.height - 64 + 8, 64, 64)
+    screen.drawImage(images.uwu, 0, 0, 48, 48, 8, canvas.height - 64 + 8, 64, 64)
 
     //draw level select / play thing
     screen.font = "24px PetMe64"

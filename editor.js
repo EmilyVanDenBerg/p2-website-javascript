@@ -48,7 +48,10 @@ spriteSheets.tileSheet.src = "assets/sprites/tileSheet.png"
 spriteSheets.subtextureSheet = new Image()
 spriteSheets.subtextureSheet.src = "assets/sprites/subtextureSheet.png"
 
-let objAmount = 68
+spriteSheets.teleporterSheet = new Image()
+spriteSheets.teleporterSheet.src = "assets/sprites/teleporterSheet.png"
+
+let objAmount = 74
 
 //inputs
 let pressedKeys = []
@@ -84,7 +87,7 @@ window.onkeydown = function(e) {
         editor.tileId += 1
     } else if (e.code == "KeyQ" && editor.subtexture > 0) {
         editor.subtexture -= 1
-    } else if (e.code == "KeyE" && editor.subtexture < 24) {
+    } else if (e.code == "KeyE" && editor.subtexture < 36) {
         editor.subtexture += 1
     } else if (e.code == "Space") {
         if (editor.shifting) {
@@ -267,6 +270,10 @@ function drawRoom() {
         if (tile.subtexture) {
            roomScreen.drawImage(spriteSheets.subtextureSheet, getTileSheetPosition(tile.subtexture), 0, 32, 32, tile.x, tile.y, 32, 32)
         }
+
+        if (tile.id == 69) {
+            roomScreen.drawImage(spriteSheets.teleporterSheet, 0, 0, 384, 384, tile.x, tile.y, 384, 384)
+        }
     })
 
     roomScreen.filter = "none"
@@ -434,8 +441,8 @@ function main() {
 
 let emptyRoom = false
 if (!emptyRoom) {
-    fetch("stages/spaceStation.json").then(response => response.json()).then(stageData => {
-        loadRoom(stageData.rooms["19"])
+    fetch("stages/laboratory.json").then(response => response.json()).then(stageData => {
+        loadRoom(stageData.rooms["8"])
     });
 }
 
@@ -445,14 +452,12 @@ main()
 
 "id": {
     "name": "meow",
-    "color": {"hue": 274, "saturation": 70, "brightness": 125},
+    "color": {"hue": 0, "saturation": 100, "brightness": 100},
+    "exits": {
+        "right": 2
+    },
     "roomData": [
 
     ]
-}
-
-end off space station:
-- emergency exit tunnel room, go right
-- death moon ending style entrance
-- teleporter ending room
+},
 */
