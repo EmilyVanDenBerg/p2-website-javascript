@@ -220,6 +220,12 @@ images.levelComplete.src = "assets/sprites/levelComplete.png"
 images.nosy = new Image()
 images.nosy.src = "assets/apy1z.png"
 
+images.warpZoneBG1 = new Image()
+images.warpZoneBG1.src = "assets/sprites/warpZoneBG1.png"
+
+images.warpZoneBG2 = new Image()
+images.warpZoneBG2.src = "assets/sprites/warpZoneBG2.png"
+
 //stage ids and their internal names
 let stages = {
     1: "spaceStation",
@@ -389,6 +395,10 @@ let winMessages = [
 
 let plrGravity = player.gravity //save it for use with gravity lines
 
+function snapToFloor() {
+
+}
+
 //main function (player movement, sprite updates, etc)
 function gameplayTick() {
     //clear screen
@@ -539,6 +549,30 @@ function gameplayTick() {
         }
 
         player.bgLineTimer += 1
+    } else if (player.stage == "warpZone") {
+        let direction = player.room.bgDir
+
+        screen.filter = `hue-rotate(${player.room.color.hue}deg) saturate(115%) brightness(32.5%)`
+
+        if (direction == 1) {
+            //horizontal
+
+            screen.drawImage(images.warpZoneBG1, -player.bgPosX, 0)
+            player.bgPosX += 4
+            if (player.bgPosX >= 960) {
+                player.bgPosX = 0
+            }
+        } else if (direction == 2) {
+            //vertical
+
+            screen.drawImage(images.warpZoneBG2, 0, -player.bgPosY)
+            player.bgPosY += 4
+            if (player.bgPosY >= 640) {
+                player.bgPosY = 0
+            }
+        }
+
+        screen.filter = "none"
     }
 
     //now the real part
@@ -746,6 +780,13 @@ function gameplayTick() {
         }
         
         //floor detection
+        if (player.onGround) {
+            //snap the player onto the floor to fix 3 block gaps making you float
+
+        }
+
+        //if youre not grounded do stuff
+
         if (!player.onGround) {
             let floorTiles = getFloorTiles()
 
@@ -838,7 +879,6 @@ function gameplayTick() {
             //same deal but with vertical moving platforms
 
             player.room.verticalPlatforms.forEach(pair => {
-                let plrCheckY = player.flipped ? roundToGrid(player.y - (player.height / 2)) : roundToGrid(player.y + player.height)
                 let xRange = {min: canvas.width, max: 0}
                 let platformPosY = 0
 
@@ -852,9 +892,7 @@ function gameplayTick() {
                         xRange.max = tile.x
                     } 
                 })
-
-                let standingOn = false
-
+                
                 let yDiff = player.flipped ? -(platformPosY - player.y) : platformPosY - player.y
                 
                 if ((player.x > xRange.min - player.width && player.x < xRange.max + 32) && (yDiff > 0 && yDiff < 100)) {
@@ -916,6 +954,7 @@ function gameplayTick() {
             if (player.room.id != player.checkpoint.roomId) {
                 loadRoom(player.checkpoint.roomId)
             }
+
             player.x = player.checkpoint.x - 24
             player.y = player.checkpoint.flipped ? player.checkpoint.y : player.checkpoint.y - player.height + 32
             player.flipped = player.checkpoint.flipped
@@ -1255,7 +1294,7 @@ function getTouchingTiles(noSolids) {
             return
         }
         
-        //yes i know this is terrible, noi i'm not fixing it i have better things to do
+        //yes i know this is terrible, no i'm not fixing it i have better things to do
 
         let tileCenterX = tile.x + 16
         let tileCenterY = tile.y + 16
@@ -1398,6 +1437,10 @@ function loadRoom(roomId) {
         player.room.color = roomData.color
     }
 
+    if (roomData.bgDir) {
+        player.room.bgDir = roomData.bgDir
+    }
+
     player.room.exits = roomData.exits || {}
 
     player.room.font = roomData.font || "PetMe64"
@@ -1407,7 +1450,7 @@ function loadRoom(roomId) {
 
     /*
         the room screen only gets drawn once, to a seperate canvas, when the room loads
-        then gets copied over to the actual screen
+        then gets copied over to the actual screen every frame
         i do this because redrawing it every frame absolutely destroys the framerate
         it's messy but it works ok i don't want to touch this anymore
     */
@@ -1661,8 +1704,8 @@ function main() {
     realScreen.reset()
     realScreen.drawImage(tempCanvas, 0, 0)
 
-   requestAnimationFrame(main)
-   //setTimeout(main, 100)
+    requestAnimationFrame(main)
+    //setTimeout(main, 100)
 }
 
 main()

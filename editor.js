@@ -463,7 +463,7 @@ function main() {
 let emptyRoom = false
 if (!emptyRoom) {
     fetch("stages/laboratory.json").then(response => response.json()).then(stageData => {
-        loadRoom(stageData.rooms["23"])
+        loadRoom(stageData.rooms["22"])
     });
 }
 
@@ -481,4 +481,5 @@ main()
 
     ]
 },
+
 */
