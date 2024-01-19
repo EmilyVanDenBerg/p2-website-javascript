@@ -5,6 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Periode 2: Javascript Game</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .portfolio-section, .experience-section, .detail-section {
+      display: none;
+      text-align: center;
+    }
+
+    .active-section {
+      display: block;
+    }
+
+    .portfolio-buttons {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .portfolio-buttons button {
+      margin: 5px;
+      padding: 12px 24px; /* Adjust the padding as needed */
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -28,30 +49,63 @@
   </nav>
 
   <main>
-    <div class="top-section">
-      <table class="gameimages">
-        <tr>
-          <th>
-            <h1>Emily</h1>
-            <h4>Ik ben Emily van den Berg, 18 jaar oud en geboren in Rotterdam. Ik heb vanaf vrij jong al interesse in computers en alles wat met software te maken heeft. Ik ben voor de middelbare school naar het gymnasium gegaan, en heb daar in de 4e klas voor Informatica gekozen. Daar heb ik vrijwel altijd goed voor gestaan, en het altijd leuk gevonden. Na de 5e ben ik van school af gegaan naar het MBO om de opleiding 'Software Developer' te doen op het Techniek College Rotterdam, waar ik nu nog steeds de opleiding goed volg.</h4>
-          </th>
-          <th>
-            <h1>Tim</h1>
-            <h4>Ik ben Tim Bosma, 20 jaar oud en geboren in Dirksland. Mijn interesse in computers is al van jongs af aan aanwezig, en om mijn passie verder te ontwikkelen, besloot ik enkele jaren geleden de opleiding ICT Support Medewerker te volgen. Na het afronden van die opleiding kreeg ik de kans om deze vervolgopleiding te doen, waar ik met veel enthousiasme aan deelneem.</h4>
-          </th>
-          <th>
-            <h1>Jordan</h1>
-            <h4>hoi. Ik vind programmeren heel interessant  , Ik ben 18 jaar en woon in Rotterdam. Ik vind werken met computers best interessant en daarom heb ik voor deze opleiding gekozen</h4>   
-          </th>
-        </tr>
-      </table>
+    <!-- Portfolio Section -->
+    <div class="top-section portfolio-section active-section">
+      <div class="portfolio-buttons">
+        <button onclick="showDetail('Emily')">Emily</button>
+        <button onclick="showDetail('Tim')">Tim</button>
+        <button onclick="showDetail('Jordan')">Jordan</button>
+      </div>
     </div>
+
+    <!-- Detail Section -->
+    <div class="top-section detail-section">
+      <h1 id="detail-name"></h1>
+      <div class="portfolio-buttons">
+        <button onclick="showDetailInfo('CV')">CV</button>
+        <button onclick="showDetailInfo('Photo')">Photo</button>
+        <button onclick="showDetailInfo('Video')">Video</button>
+        <button onclick="showDetailInfo('Hobbies')">Hobbies</button>
+        <button onclick="showDetailInfo('Other')">Other</button>
+        <button onclick="backToPortfolio()">Back to Portfolio</button>
+      </div>
+    </div>
+
+    <!-- Experience Section -->
+    <div class="top-section experience-section">
+      <h2>Work Experience - Emily</h2>
+      <p>Details about Emily's work experience.</p>
+    </div>
+
+    <!-- ... (Similar sections for Tim and Jordan's work experience) -->
+
   </main>
 
   <footer>
     <p>&copy; 2023 Emily, Tim, Jordan. All rights reserved.</p>
   </footer>
+
+  <script>
+    function showDetail(name) {
+      // Hide portfolio section and show detail section
+      document.querySelector('.portfolio-section').classList.remove('active-section');
+      document.querySelector('.detail-section').classList.add('active-section');
+
+      // Set the name in the detail section
+      document.getElementById('detail-name').textContent = name;
+    }
+
+    function showDetailInfo(infoType) {
+      // Logic to show detailed information based on the selected type (CV, Photo, Video, Hobbies, Other)
+      // You can implement this based on your actual content and structure
+      console.log(`Showing ${infoType} for the selected person.`);
+    }
+
+    function backToPortfolio() {
+      // Hide detail section and show portfolio section
+      document.querySelector('.detail-section').classList.remove('active-section');
+      document.querySelector('.portfolio-section').classList.add('active-section');
+    }
+  </script>
 </body>
 </html>
-
-
