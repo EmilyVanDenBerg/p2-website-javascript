@@ -51,7 +51,10 @@ spriteSheets.subtextureSheet.src = "assets/sprites/subtextureSheet.png"
 spriteSheets.teleporterSheet = new Image()
 spriteSheets.teleporterSheet.src = "assets/sprites/teleporterSheet.png"
 
-let objAmount = 74
+spriteSheets.enemySheet = new Image()
+spriteSheets.enemySheet.src = "assets/sprites/enemySheet.png"
+
+let objAmount = 86
 
 //inputs
 let pressedKeys = []
@@ -256,9 +259,17 @@ function getTileSheetPosition(id) {
     return (id - 1) * (32 + 1)
 }
 
+function getEnemySheetPosition(id) {
+    return (id - 1) * 64
+}
+
 function isValidPlacement(location, layer) {
     return !editor.tiles.some(tile => tile.x == location.x && tile.y == location.y && tile.layer == editor.layer)
 }
+
+let enemyTiles = [
+    75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86
+]
 
 function drawRoom() {
     roomScreen.reset()
@@ -267,12 +278,17 @@ function drawRoom() {
     editor.tiles.forEach(tile => {
         roomScreen.globalAlpha = tile.layer == editor.layer ? 1 : 0.25
         roomScreen.drawImage(spriteSheets.tileSheet, getTileSheetPosition(tile.id), 0, 32, 32, tile.x, tile.y, 32, 32)
+
         if (tile.subtexture) {
            roomScreen.drawImage(spriteSheets.subtextureSheet, getTileSheetPosition(tile.subtexture), 0, 32, 32, tile.x, tile.y, 32, 32)
         }
 
         if (tile.id == 69) {
             roomScreen.drawImage(spriteSheets.teleporterSheet, 0, 0, 384, 384, tile.x, tile.y, 384, 384)
+        }
+
+        if (enemyTiles.includes(tile.id)) {
+            roomScreen.drawImage(spriteSheets.enemySheet, 0, getEnemySheetPosition(tile.id - 74), 64, 64, tile.x, tile.y, 64, 64)
         }
     })
 
@@ -346,8 +362,13 @@ function tick() {
     screen.filter = `hue-rotate(${editor.color.hue}deg) saturate(${editor.color.saturation}%) brightness(${editor.color.brightness}%)`
 
     screen.drawImage(spriteSheets.tileSheet, getTileSheetPosition(editor.tileId), 0, 32, 32, editor.cursor.x, editor.cursor.y, 32, 32)
+
     if (editor.subtexture > 0) {
         screen.drawImage(spriteSheets.subtextureSheet, getTileSheetPosition(editor.subtexture), 0, 32, 32, editor.cursor.x, editor.cursor.y, 32, 32)
+    }
+
+    if (enemyTiles.includes(editor.tileId)) {
+        screen.drawImage(spriteSheets.enemySheet, 0, getEnemySheetPosition(editor.tileId - 74), 64, 64, editor.cursor.x, editor.cursor.y, 64, 64)
     }
 
     screen.globalAlpha = 1
@@ -442,7 +463,7 @@ function main() {
 let emptyRoom = false
 if (!emptyRoom) {
     fetch("stages/laboratory.json").then(response => response.json()).then(stageData => {
-        loadRoom(stageData.rooms["8"])
+        loadRoom(stageData.rooms["23"])
     });
 }
 

@@ -37,6 +37,7 @@ let player = {
         movingPlatforms: [],
         verticalPlatforms: [],
         checkpoints: [],
+        enemies: [],
     },
 
     //checkpoint info
@@ -101,6 +102,7 @@ let player = {
     bgLineTimer: 0,
 
     //warp zone background
+    bgPosX: 0,
     bgPosY: 0,
 
     //tile animations
@@ -108,6 +110,10 @@ let player = {
     conveyorSpriteIndex: 1,
     teleporterSpriteTimer: 0,
     teleporterSpriteIndex: 0,
+
+    //enemy animation
+    enemySpriteTimer: 0,
+    enemySpriteIndex: 1,
 
     //shhhh
     debug: true,
@@ -137,6 +143,9 @@ spriteSheets.checkpointSheet.src = "assets/sprites/checkpointSheet.png"
 spriteSheets.teleporterSheet = new Image()
 spriteSheets.teleporterSheet.src = "assets/sprites/teleporterSheet.png"
 
+spriteSheets.enemySheet = new Image()
+spriteSheets.enemySheet.src = "assets/sprites/enemySheet.png"
+
 //music
 let music = {}
 
@@ -151,6 +160,10 @@ music.spaceStation.loop = true
 music.laboratory = new Audio()
 music.laboratory.src = "assets/music/laboratory.ogg"
 music.laboratory.loop = true
+
+music.warpZone = new Audio()
+music.warpZone.src = "assets/music/warpZone.ogg"
+music.warpZone.loop = true
 
 //sounds
 let sounds = {}
@@ -204,11 +217,14 @@ images.menuBG.src = "assets/sprites/menuBG.png"
 images.levelComplete = new Image()
 images.levelComplete.src = "assets/sprites/levelComplete.png"
 
+images.nosy = new Image()
+images.nosy.src = "assets/apy1z.png"
+
 //stage ids and their internal names
 let stages = {
     1: "spaceStation",
     2: "laboratory",
-    3: "test",
+    3: "warpZone",
 }
 
 //inputs
@@ -278,6 +294,10 @@ function getTileSheetPosition(id) {
     return (id - 1) * (32 + 1)
 }
 
+function getEnemySheetPosition(id) {
+    return (id - 1) * 64
+}
+
 //list of non-solid objects (used for checking solid ground)
 let nonSolids = [
     3, 4, 5, 6, //spikes
@@ -323,6 +343,22 @@ let hitboxLeniency = {
     //gravity lines (better hitboxes)
     63: [0, 12],
     64: [12, 0],
+}
+
+//tiles that will load in as enemies
+let enemyTiles = [
+    75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86
+]
+
+enemyTiles.forEach(id => {
+    nonSolids.push(id)
+})
+
+//special speeds for specific rooms (i'm too lazy to code it into the tiles themselves)
+let enemySpeeds = {
+    laboratory: {
+        16: 8
+    }
 }
 
 function randomNum(min, max) {
@@ -551,7 +587,7 @@ function gameplayTick() {
                     player.touchedGravityLine = false
                     player.gravity = plrGravity
                     player.gravityLineTick = 1
-                    player.gravityLineCooldown = 5
+                    player.gravityLineCooldown = 3
                 }
             }
         }
@@ -568,7 +604,9 @@ function gameplayTick() {
             //if the player interacts with a gravity line flip them
             if ((tile.id == 63 || tile.id == 64) && !player.touchedGravityLine && player.gravityLineCooldown <= 0) {
                 player.touchedGravityLine = true
-                sounds.gravityLine.play()
+                if (player.winFrames == 0) {
+                    sounds.gravityLine.play()
+                }
             }
 
             //if it's a checkpoint set it accordingly
@@ -636,6 +674,42 @@ function gameplayTick() {
                     }
                 })
             })
+        })
+
+        //handle enemies
+        player.room.enemies.forEach(enemy => {
+            if (player.x >= enemy.x - 32 && player.x <= enemy.x + 64 && player.y >= enemy.y - 32 && player.y <= enemy.y + 64) {
+                die()
+            }
+
+            let colliding = getCollidingTiles(enemy)
+            colliding.forEach(otherTile => {
+                //i feel like yanderedev rn oml
+                if (otherTile.id == 45) {
+                    enemy.direction = 1
+                } else if (otherTile.id == 46) {
+                    enemy.direction = 2
+                } else if (otherTile.id == 47) {
+                    enemy.direction = 3
+                } else if (otherTile.id == 48) {
+                    enemy.direction = 4
+                }
+            })
+
+            switch(enemy.direction) {
+                case 1:
+                    enemy.x -= enemy.speed
+                    break;
+                case 2:
+                    enemy.x += enemy.speed
+                    break;
+                case 3:
+                    enemy.y -= enemy.speed
+                    break;
+                case 4:
+                    enemy.y += enemy.speed
+                    break;
+            }
         })
 
         //physics (kill me please this took too god damn long)
@@ -915,6 +989,20 @@ function gameplayTick() {
         }
     })
 
+    //render enemies
+    player.enemySpriteTimer += 1
+    if (player.enemySpriteTimer >= 6) {
+        player.enemySpriteTimer = 0
+        player.enemySpriteIndex += 1
+        if (player.enemySpriteIndex > 4) {
+            player.enemySpriteIndex = 1
+        }
+    }
+
+    player.room.enemies.forEach(enemy => {
+        screen.drawImage(spriteSheets.enemySheet, (player.enemySpriteIndex - 1) * 64, getEnemySheetPosition(enemy.id - 74), 64, 64, enemy.x, enemy.y, 64, 64)
+    })
+
     screen.filter = "none"
 
     //render ending teleporter if it exists and make the ending sequence play if it isn't already
@@ -960,7 +1048,11 @@ function gameplayTick() {
         screen.font = `24px ${player.room.font}`
         screen.fillStyle = "white"
         screen.textAlign = "center"
-        screen.fillText(player.room.name, canvas.width / 2, canvas.height - 8)
+        if (player.stage == "laboratory" && player.room.id == 14) {
+            screen.drawImage(images.nosy, canvas.width / 2 - images.nosy.width / 2, canvas.height - 32)
+        } else {
+            screen.fillText(player.room.name, canvas.width / 2, canvas.height - 8)
+        }
 
         //draw fps and time
         screen.font = "16px PetMe64"
@@ -1327,6 +1419,7 @@ function loadRoom(roomId) {
     player.room.movingPlatforms = []
     player.room.verticalPlatforms = []
     player.room.checkpoints = []
+    player.room.enemies = []
     
     let bgDecoTiles = []
 
@@ -1343,6 +1436,19 @@ function loadRoom(roomId) {
             }
         } else if (backgroundTiles.includes(tile.id)) {
             bgDecoTiles.push(tile)
+        } else if (enemyTiles.includes(tile.id)) {
+            if (tile.originalPosition) {
+                tile.x = tile.originalPosition.x
+                tile.y = tile.originalPosition.y
+            } else {
+                tile.originalPosition = {x: tile.x, y: tile.y}
+            }
+
+            if (tile.originalDirection) {
+                tile.direction = tile.originalDirection
+            } else {
+                tile.originalDirection = tile.direction
+            }
         }
     })
 
@@ -1354,10 +1460,6 @@ function loadRoom(roomId) {
     //draw everything else, as well as handling stuff like special platform pairs
 
     tiles.forEach(tile => {
-        if (tile.x > canvas.width || tile.x <= -32) {
-            return
-        }
-
         if (backgroundTiles.includes(tile.id)) {
             return
         }
@@ -1476,6 +1578,14 @@ function loadRoom(roomId) {
             //ending teleporter
         } else if (tile.id == 70) {
             //ending blockades
+        } else if (enemyTiles.includes(tile.id)) {
+            tile.direction = 3
+
+            tile.speed = 3
+            if (enemySpeeds[player.stage] && enemySpeeds[player.stage][player.room.id]) {
+                tile.speed = enemySpeeds[player.stage][player.room.id]
+            }
+            player.room.enemies.push(tile)
         } else {
             roomScreen.drawImage(spriteSheets.tileSheet, getTileSheetPosition(tile.id), 0, 32, 32, tile.x, tile.y, 32, 32)
             if (tile.subtexture) {

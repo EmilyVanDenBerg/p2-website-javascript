@@ -903,7 +903,7 @@
         ]
     },
     "3": {
-        "name": "Going Up",
+        "name": "Falling Up",
         "color": {"hue": 320, "saturation": 80, "brightness": 125},
         "exits": {
             "left": 2,
@@ -7153,7 +7153,7 @@
         ]
     },
     "19": {
-        "name": "ITS BLUE",
+        "name": "Lucky Draw",
         "color": {"hue": 230, "saturation": 125, "brightness": 110},
         "exits": {
             "up": 18,
