@@ -1,0 +1,21 @@
+# Space Invaders Spel
+
+Dit is een eenvoudig Space Invaders spel geschreven in HTML en JavaScript.
+
+## Inhoud van de Bestanden
+
+- `index.html`: Dit bestand bevat de HTML-structuur van het spel, inclusief de canvas en de startknop.
+- `style.css`: De stijlbladen voor de opmaak van het spel.
+- `game.js`: De JavaScript-code voor het Space Invaders spel.
+
+## Hoe je het moet spelen
+
+1. Open het `index.html` bestand in een webbrowser.
+2. Klik op de "Start Game" knop om het spel te starten.
+3. Gebruik de pijltjestoetsen om naar links en rechts te bewegen.
+4. Druk op de spatiebalk om te schieten en probeer de rode vijanden te raken.
+5. Vermijd dat de vijanden de onderkant van het scherm bereiken.
+
+##
+
+Veel plezier met spelen!
