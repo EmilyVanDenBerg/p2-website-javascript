@@ -154,3 +154,29 @@ footer p {
   background-color: #39522A;
   cursor: pointer;
 }
+
+.portfolio-buttons {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.portfolio-buttons button {
+  margin: 5px;
+  padding: 12px 24px; /* Adjust the padding as needed */
+  font-size: 16px;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button, button a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.center-image {
+  height: 55vh;
+  width: 40vh;
+}
