@@ -1845,7 +1845,8 @@
         ]
     },
     "5": {
-        "name": "Express Elevator",
+        "name": "EXPRESS ELEVATOR--HURRY UP!",
+        "font": "SM64",
         "color": {"hue": 90, "saturation": 80, "brightness": 150},
         "exits": {
             "right": 4,
@@ -2454,8 +2455,7 @@
         ]
     },
     "6": {
-        "name": "TRICKY TIMINGS!",
-        "font": "SM64",
+        "name": "Tricky Timings",
         "color": {"hue": 320, "saturation": 75, "brightness": 100},
         "exits": {
             "right": 5,
@@ -3074,7 +3074,7 @@
         ]
     },
     "7": {
-        "name": "hurry up",
+        "name": "Collapsing Chaos",
         "color": {"hue": 0, "saturation": 80, "brightness": 100},
         "exits": {
             "down": 6,

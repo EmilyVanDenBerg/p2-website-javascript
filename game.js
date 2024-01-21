@@ -50,6 +50,7 @@ let player = {
 
     //extra information
     onGround: false,
+    justLanded: false,
     flipped: false,
     canFlip: true,
     touchedGravityLine: false,
@@ -116,7 +117,7 @@ let player = {
     enemySpriteIndex: 1,
 
     //shhhh
-    debug: true,
+    debug: false,
 }
 
 //spritesheet setup
@@ -208,9 +209,6 @@ let images = {}
 images.logo = new Image()
 images.logo.src = "assets/sprites/logo.png"
 
-images.uwu = new Image()
-images.uwu.src = "assets/sprites/cami.png"
-
 images.menuBG = new Image()
 images.menuBG.src = "assets/sprites/menuBG.png"
 
@@ -218,7 +216,7 @@ images.levelComplete = new Image()
 images.levelComplete.src = "assets/sprites/levelComplete.png"
 
 images.nosy = new Image()
-images.nosy.src = "assets/apy1z.png"
+images.nosy.src = "assets/nosy.png"
 
 images.warpZoneBG1 = new Image()
 images.warpZoneBG1.src = "assets/sprites/warpZoneBG1.png"
@@ -288,6 +286,7 @@ window.onkeydown = function(e) {
         }
     }
 }
+
 window.onkeyup = function(e) {
     pressedKeys[e.code] = false
 }
@@ -360,11 +359,24 @@ enemyTiles.forEach(id => {
     nonSolids.push(id)
 })
 
-//special speeds for specific rooms (i'm too lazy to code it into the tiles themselves)
-let enemySpeeds = {
+//special speeds for specific rooms (i'm too lazy to code it into the tiles themselves, default speed/direction is 3 btw)
+let enemyPresets = {
     laboratory: {
-        16: 8
-    }
+        16: {
+            speed: 8,
+        }
+    },
+    warpZone: {
+        4: {
+            speed: 4,
+        },
+        11: {
+            speed: 5,
+        },
+        13: {
+            direction: 2,
+        }
+    },
 }
 
 function randomNum(min, max) {
@@ -382,8 +394,6 @@ function numPadding(num) {
 let winMessages = [
     "after a mental breakdown",
     "do it again I wasn't looking",
-    "go faster next time",
-    "massive skill issue you got there",
     "that's crazy",
     "simply too skilled",
     "too easy",
@@ -391,12 +401,26 @@ let winMessages = [
     "i can't react or i'm gonna cough so much",
     "easier than back on track",
     "i verified the golden lets go",
+    "no way",
 ]
 
 let plrGravity = player.gravity //save it for use with gravity lines
 
-function snapToFloor() {
+function snapToFloor(floorY) {
+    if (player.flipped) {
+        player.y = floorY + 32
+    } else {
+        let heightDiff = floorY - (player.y + player.height)
+        player.y += heightDiff
+    }
+}
 
+function getFloorY(floorTiles) {
+    if (floorTiles[0]) {
+        return floorTiles[0].y
+    } else {
+        return floorTiles[1].y
+    }
 }
 
 //main function (player movement, sprite updates, etc)
@@ -428,7 +452,6 @@ function gameplayTick() {
         screen.fillRect(0, 0, canvas.width, canvas.height)
 
         player.bgStars.forEach((star, index) => {
-            //slower stars are further away and so they move slower and are also darker
             let color = 225 - (star.speed * 15)
 
             screen.fillStyle = `rgb(${color}, ${color}, ${color})`
@@ -436,7 +459,7 @@ function gameplayTick() {
 
             star.x -= star.speed
 
-            //delete it if it's outside the screen (to prevent cluttering and lag)
+            //get rid of it if it's outside the screen (to prevent cluttering and lag)
             if (star.x <= -32) {
                 player.bgStars.splice(index, 1)
             }
@@ -458,8 +481,6 @@ function gameplayTick() {
     } else if (player.stage == "laboratory") {
         screen.fillStyle = `hsl(${player.room.color.hue}, ${player.room.color.saturation}%, 3%)`
         screen.fillRect(0, 0, canvas.width, canvas.height)
-
-        //todo: fancy background
 
         player.bgLines.forEach((line, index) => {
             let horizontal = line.direction == 1 || line.direction == 2
@@ -552,7 +573,7 @@ function gameplayTick() {
     } else if (player.stage == "warpZone") {
         let direction = player.room.bgDir
 
-        screen.filter = `hue-rotate(${player.room.color.hue}deg) saturate(115%) brightness(32.5%)`
+        screen.filter = `hue-rotate(${player.room.color.hue}deg) saturate(115%) brightness(25%)`
 
         if (direction == 1) {
             //horizontal
@@ -590,17 +611,17 @@ function gameplayTick() {
             if (player.room.exits && player.room.exits.right) {
                 loadRoom(player.room.exits.right)
             }
-            player.x = 0
+            player.x = -32
         } else if (player.y < -player.height && player.flipped) {
             if (player.room.exits && player.room.exits.up) {
                 loadRoom(player.room.exits.up)
             }
-            player.y = canvas.height - player.height
-        } else if (player.y > canvas.height && !player.flipped) {
+            player.y = canvas.height - 32
+        } else if (player.y > canvas.height - 32 && !player.flipped) {
             if (player.room.exits && player.room.exits.down) {
                 loadRoom(player.room.exits.down)
             }
-            player.y = -player.height + 32
+            player.y = -64
         }
 
         if (player.gravityLineCooldown > 0) {
@@ -655,7 +676,7 @@ function gameplayTick() {
             }
         })
 
-        //break any breaking breaking platforms
+        //start breaking any breaking breaking platforms (say that 10 times fast)
         player.room.breakingPlatforms.forEach((pair, index) => {
             if (pair.breaking) {
                 pair.spriteTimer += 1
@@ -733,20 +754,32 @@ function gameplayTick() {
             switch(enemy.direction) {
                 case 1:
                     enemy.x -= enemy.speed
+                    if (enemy.x <= -64) {
+                        enemy.x = canvas.width
+                    }
                     break;
                 case 2:
                     enemy.x += enemy.speed
+                    if (enemy.x >= canvas.width) {
+                        enemy.x = -64
+                    }
                     break;
                 case 3:
                     enemy.y -= enemy.speed
+                    if (enemy.y <= -64) {
+                        enemy.y = canvas.height
+                    }
                     break;
                 case 4:
                     enemy.y += enemy.speed
+                    if (enemy.y >= canvas.height) {
+                        enemy.y = -64
+                    }
                     break;
             }
         })
 
-        //physics (kill me please this took too god damn long)
+        //physics (this took way too long)
 
         //wall detection
         let nearbyWalls = getWallTiles()
@@ -780,13 +813,8 @@ function gameplayTick() {
         }
         
         //floor detection
-        if (player.onGround) {
-            //snap the player onto the floor to fix 3 block gaps making you float
-
-        }
 
         //if youre not grounded do stuff
-
         if (!player.onGround) {
             let floorTiles = getFloorTiles()
 
@@ -794,24 +822,12 @@ function gameplayTick() {
                 player.onGround = true
                 player.canFlip = true
 
-                let floorY = 0
-                if (floorTiles[0]) {
-                    floorY = floorTiles[0].y
-                } else {
-                    floorY = floorTiles[1].y
-                }
+                let floorY = getFloorY(floorTiles)
 
                 //snap the player onto the floor bc the collisions suck but i can't be bothered to fix them properly
                 if (!player.justLanded) {
                     player.justLanded = true
-
-                    //ternary operators too confusing here :sob:
-                    if (player.flipped) {
-                        player.y = floorY + 32
-                    } else {
-                        let heightDiff = floorY - (player.y + player.height)
-                        player.y += heightDiff
-                    }
+                    snapToFloor(floorY)
                 }
 
                 //if it's a conveyor, move the player (1: left, 2: right)
@@ -1347,6 +1363,14 @@ function flip(self) {
             sounds.flip.play()
         }
     }
+
+    //snap player to floor (fixes 3 tile gaps making you float)
+    let floorTiles = getFloorTiles()
+
+    if (floorTiles[0] || floorTiles[1]) {
+        let floorY = getFloorY(floorTiles)
+        snapToFloor(floorY)
+    }
 }
 
 function die() {
@@ -1360,7 +1384,7 @@ function die() {
 }
 
 function loadStage(stageName) {
-    //loading json files in html is so annoying omfg
+    //loading json files in html is so annoying omg
     fetch(`stages/${stageName}.json`).then(response => response.json()).then(stageData => {
         player.stage = stageName
         player.stageData = stageData
@@ -1609,7 +1633,7 @@ function loadRoom(roomId) {
 
             player.room.verticalPlatforms.push(pair)
         } else if (tile.id == 45 || tile.id == 46 || tile.id == 47 || tile.id == 48) {
-            //special objects only used for moving platforms
+            //special objects only used for moving platforms and enemies
         } else if (tile.id == 65 || tile.id == 66) {
             //checkpoints, rendered seperately
             player.room.checkpoints.push(tile)
@@ -1623,11 +1647,17 @@ function loadRoom(roomId) {
             //ending blockades
         } else if (enemyTiles.includes(tile.id)) {
             tile.direction = 3
-
             tile.speed = 3
-            if (enemySpeeds[player.stage] && enemySpeeds[player.stage][player.room.id]) {
-                tile.speed = enemySpeeds[player.stage][player.room.id]
+
+            if (enemyPresets[player.stage] && enemyPresets[player.stage][player.room.id]) {
+                if (enemyPresets[player.stage][player.room.id].speed) {
+                    tile.speed = enemyPresets[player.stage][player.room.id].speed
+                }
+                if (enemyPresets[player.stage][player.room.id].direction) {
+                    tile.direction = enemyPresets[player.stage][player.room.id].direction
+                }
             }
+
             player.room.enemies.push(tile)
         } else {
             roomScreen.drawImage(spriteSheets.tileSheet, getTileSheetPosition(tile.id), 0, 32, 32, tile.x, tile.y, 32, 32)
@@ -1667,28 +1697,30 @@ function menuTick() {
     //render logo
     screen.drawImage(images.logo, canvas.width / 2 - images.logo.width / 2, player.menuTab == 1 ? 100 : 250)
 
-    //me!!!
-    screen.drawImage(images.uwu, 0, 0, 48, 48, 8, canvas.height - 64 + 8, 64, 64)
+    //render subtitle
+    screen.font = "24px PetMe64"
+    screen.fillStyle = "yellow"
+    screen.textAlign = "center"
+
+    screen.fillText("JavaScript Edition", canvas.width / 2, player.menuTab == 1 ? 210 : 360)
 
     //draw level select / play thing
-    screen.font = "24px PetMe64"
     screen.fillStyle = "white"
-    screen.textAlign = "center"
 
     if (player.menuTab == 1) {
         screen.font = "32px PetMe64"
         screen.fillStyle = "aqua"
-        screen.fillText("select level:", canvas.width / 2, 225)
+        screen.fillText("select level:", canvas.width / 2, 350)
 
         screen.font = "24px PetMe64"
         screen.fillStyle = "white"
 
-        screen.fillText(player.menuSelectedLevel == 1 ? "[SPACE STATION]" : "space station", canvas.width / 2, 350)
-        screen.fillText(player.menuSelectedLevel == 2 ? "[LABORATORY]" : "laboratory", canvas.width / 2, 400)
-        screen.fillText(player.menuSelectedLevel == 3 ? "[WARP ZONE]" : "warp zone", canvas.width / 2, 450)
+        screen.fillText(player.menuSelectedLevel == 1 ? "[SPACE STATION]" : "space station", canvas.width / 2, 400)
+        screen.fillText(player.menuSelectedLevel == 2 ? "[LABORATORY]" : "laboratory", canvas.width / 2, 450)
+        screen.fillText(player.menuSelectedLevel == 3 ? "[WARP ZONE]" : "warp zone", canvas.width / 2, 500)
     } else {
         screen.fillStyle = "aqua"
-        screen.fillText("press [SPACE] to play", canvas.width / 2, canvas.height - 250)
+        screen.fillText("press [SPACE] to play", canvas.width / 2, canvas.height - 175)
     }
 }
 
@@ -1705,7 +1737,7 @@ function main() {
     realScreen.drawImage(tempCanvas, 0, 0)
 
     requestAnimationFrame(main)
-    //setTimeout(main, 100)
+    //setTimeout(main, 100) //slow mode
 }
 
 main()
