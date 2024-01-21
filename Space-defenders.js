@@ -1,13 +1,34 @@
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+document.addEventListener("DOMContentLoaded", () => {
+  const canvas = document.getElementById("canvas");
 
+  if (!canvas) {
+    console.error("Canvas not found.");
+    return;
+  }
 
+  const ctx = canvas.getContext("2d");
 
+  if (!ctx) {
+    console.error("2D context not found.");
+    return;
+  }
 
-// Rest of your JavaScript code goes here
-// ...
+  const startButton = document.getElementById("startButton");
 
-const player = {
+  if (!startButton) {
+    console.error("Start button not found.");
+    return;
+  }
+
+  startButton.addEventListener("click", () => {
+    if (!isGameStarted) {
+      isGameStarted = true;
+      resetGame();
+      update();
+    }
+  });
+
+  const player = {
     x: canvas.width / 2 - 20,
     y: canvas.height - 30,
     width: 40,
@@ -127,14 +148,6 @@ const player = {
 
   let isSpacebarPressed = false;
 
-  document.getElementById("startButton").addEventListener("click", () => {
-    if (!isGameStarted) {
-      isGameStarted = true;
-      resetGame();
-      update();
-    }
-  });
-
   document.addEventListener("keydown", (event) => {
     if (event.key === "ArrowLeft") {
       player.moveDirection = -1;
@@ -194,10 +207,4 @@ const player = {
   }
 
   update();
-
-
-// Example code for demonstration purposes
-
-
-ctx.fillStyle = "red";
-ctx.fillRect(50, 50, 50, 50);
+});
