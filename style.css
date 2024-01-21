@@ -82,6 +82,8 @@ main {
   background-color: #fff;
 }
 
+
+
 .gameimages {
   width: 100%;
   border-collapse: collapse;
@@ -99,7 +101,7 @@ main {
 }
 
 .gameimageheader {
-  height: 50%;
+  height: 25%;
   width: 50%;
 }
 
@@ -179,4 +181,34 @@ button, button a {
 .center-image {
   height: 55vh;
   width: 40vh;
+}
+
+@font-face {
+  font-family: "PetMe64";
+  src: url("assets//fonts//PetMe64.ttf");
+}
+
+@font-face {
+  font-family: "SM64";
+  src: url("assets//fonts//SM64.ttf");
+}
+
+canvas {
+    outline-style: solid;
+    outline-color: #FFFFFF;
+    outline-width: 5px;
+}
+
+.vvvvvv-align {
+  display: flex;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  margin-top: 1.5%;
+}
+
+.imgcentered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
