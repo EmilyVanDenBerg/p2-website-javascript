@@ -15,16 +15,19 @@ let leftPressed = false;
 let rightPressed = false;
 let mousePressed = false;
 
+// Voor een loop
 let tellerCyclus = 0;
-let cyclus = 3;
-let gravity = 1;
-let initialGravity = 1; // Bewaar de initiële zwaartekrachtwaarde
+let cyclus = 3; 
+
+let gravity = 1; // Zwaartekracht
+let initialGravity = 1
 let jumpForce = -7; // Constante sprongkracht
 
 // Voeg de balken toe
 let barWidth = 10;
 let barHeight = 100;
 
+// Waarden voor de rode bars
 let topBar = { x: 0, y: 0, width: canvas.width, height: barWidth, speed: 0.1 };
 let bottomBar = { x: 0, y: canvas.height - barWidth, width: canvas.width, height: barWidth, speed: 0.1 };
 let leftBar = { x: 0, y: 0, width: barWidth, height: canvas.height, speed: 0.1 };
@@ -40,7 +43,7 @@ let score = 0;
 // Voeg een variabele toe voor het bijhouden van de tijd en de laatste score-update tijd
 let lastUpdateTime = 0;
 
-//meow
+// Frames totdat de bar van richting kan veranderen
 let barMoveFrames = 0;
 
 // Voeg een variabele toe om bij te houden of de snelheid al is verhoogd
@@ -66,15 +69,16 @@ function drawStartScreen() {
     ctx.fillStyle = 'black';
     ctx.font = '48px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('Wall Dodger', canvas.width / 2, canvas.height / 2 - 120); // Voeg "Wall Dodger" toe bovenaan het scherm
+    ctx.fillText('Wall Dodger', canvas.width / 2, canvas.height / 2 - 120);
 
     ctx.fillStyle = 'white';
     ctx.font = '24px Arial';
     ctx.fillText('Klik om te starten', canvas.width / 2, canvas.height / 2 + 30);
 }
 
-// Functie om het canvas en de bal en balken te tekenen
+// Functie om het canvas, het startscherm, de bal, de score en eventuele game over status te tekenen
 function drawCanvasAndBall() {
+    // Teken het startscherm als de game status 'startscherm' is
     if (gameStatus === 'startscherm') {
         drawStartScreen();
     } 
@@ -134,7 +138,8 @@ function drawCanvasAndBall() {
 document.addEventListener('keydown', function (event) {
     if (event.key === 'a' || event.key === 'A') {
         leftPressed = true;
-    } else if (event.key === 'd' || event.key === 'D') {
+    } 
+    else if (event.key === 'd' || event.key === 'D') {
         rightPressed = true;
     }
 });
@@ -142,7 +147,8 @@ document.addEventListener('keydown', function (event) {
 document.addEventListener('keyup', function (event) {
     if (event.key === 'a' || event.key === 'A') {
         leftPressed = false;
-    } else if (event.key === 'd' || event.key === 'D') {
+    } 
+    else if (event.key === 'd' || event.key === 'D') {
         rightPressed = false;
     }
 });
@@ -243,15 +249,16 @@ function handleGameOver() {
     speed = 0; // Stop de beweging van de bal
 }
 
-// Functie om de beweging van de balken te controleren
+// Functie om de beweging van de balken te controleren (zodat ze niet offscreen gaan)
 function forceSpeedFlip(bar) {
     barMoveFrames = 0;
     bar.speed = -bar.speed;
 }
 
+// Functie om de bars te bewegen op basis van de score
+// De barmoveframes gaan pas in werking zodra de score 5 is (voor de horizontale balken) of 10 is (voor de verticale balken)
 function moveBars() {
     if (!gameOver) {
-        // Controleer of de score groter is dan of gelijk is aan 15
         if (score >= 10) {
             barMoveFrames += 1;
 
@@ -298,6 +305,7 @@ function moveBars() {
         leftBar.x += leftBar.speed;
         rightBar.x -= rightBar.speed;
 
+        // Check of de bars out of bounds gaan
         let topOOB = topBar.speed < 0 && topBar.y < 0;
         let bottomOOB = bottomBar.speed < 0 && bottomBar.y + bottomBar.height > canvas.height;
         let leftOOB = leftBar.speed < 0 && leftBar.x < 0;
